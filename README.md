@@ -52,6 +52,78 @@ Its goal is to isolate and demonstrate the **kleptographic channel** in a minima
 
 ---
 
+## Experiment 2
+
+### Backdoor in Kyber-KEM via Conditional Error Sampling
+
+*(based on* **Post-Quantum Backdoor for Kyber-KEM**, *LNCS WISA 2025)*
+
+Paper:
+**Post-Quantum Backdoor for Kyber-KEM**
+LNCS 2025 (WISA Proceedings)
+[https://link.springer.com/chapter/10.1007/978-3-031-82852-2_11](https://link.springer.com/chapter/10.1007/978-3-031-82852-2_11)
+
+Reference Code (authors):
+[https://github.com/Summwer/kyber-backdoor](https://github.com/Summwer/kyber-backdoor)
+
+CyberSeQ Python Simulation (Experiment 2 reproduction):
+[https://github.com/owlmt/PQC/blob/main/mlkem_backdoor_experiment2.ipynb](https://github.com/owlmt/PQC/blob/main/mlkem_backdoor_experiment2.ipynb)
+
+This experiment implements the backdoor proposed by Xia, Wang, and Gu in 2025, which introduces a **statistically undetectable kleptographic channel** directly inside **Kyber-KEM**.
+Unlike Experiment 1, which uses modular compensation vectors, this attack uses **conditional sampling of the noise vector `e`** to embed an auxiliary ciphertext inside the **LSBs of the Kyber public key**.
+
+The attacker uses a secondary post-quantum system (in the paper: **Classic McEliece**) to produce:
+
+1. A **768-bit ciphertext** `C`.
+2. A shared secret `K`, which acts as the deterministic seed `d` for Kyber key generation.
+
+Kyber’s public key component is:
+
+[
+t = A \cdot s + e
+]
+
+The backdoor modifies the sampling of `e` such that:
+
+* If `LSB(A·s[i]) = C[i]`, sample `e[i]` from **D₀** (even-valued errors).
+* If `LSB(A·s[i]) ≠ C[i]`, sample `e[i]` from **D₁** (odd-valued errors).
+
+This ensures that for all **non-border coefficients**:
+
+[
+\operatorname{LSB}(t[i]) = C[i]
+]
+
+with probability 1, while the global error distribution still matches the true **B₂** distribution used in FIPS 203.
+
+An external party holding the **McEliece secret key** can:
+
+1. Read the Kyber public key.
+2. Extract the bitstring `C` by reading the LSBs of `t`.
+3. Decrypt `C` to recover the seed `K`.
+4. Recompute the Kyber secret vector `s`, fully recovering the private key.
+
+### Provided in this repository
+
+* A **full Python implementation** of the Xia–Wang–Gu KeyGen* and KeyRec* algorithms.
+* Deterministic, Kyber-consistent sampling of the B₂ noise distribution.
+* Real matrix–vector arithmetic in (R_q) with centered representation.
+* Verification of:
+
+  * conditional error distributions (D₀, D₁),
+  * border-case frequency,
+  * LSB uniformity.
+* A complete **end-to-end recovery demo**, where the attacker:
+
+  * extracts `C`,
+  * decrypts it via Classic McEliece,
+  * regenerates the Kyber secret key.
+
+This experiment demonstrates how a **fully standards-compliant** ML-KEM implementation can be backdoored without altering any observable statistical properties of the public key or noise distribution.
+Because the attack lives entirely inside **KeyGen**, and preserves the expected randomness profile, traditional conformance tests cannot detect it.
+
+---
+
 ## Warning / Disclaimer
 
 This repository is for:
@@ -62,5 +134,6 @@ This repository is for:
 
 It is **not** intended for deployment or integration into real systems.
 Never use modified, experimental, or untrusted cryptographic implementations in production.
+
 
 
