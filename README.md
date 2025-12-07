@@ -123,19 +123,21 @@ This experiment demonstrates how a **fully standards-compliant** ML-KEM implemen
 Because the attack lives entirely inside **KeyGen**, and preserves the expected randomness profile, traditional conformance tests cannot detect it.
 
 ---
-# Experiment 3
+## Experiment 3
 
-## Backdoor in CRYSTALS-Dilithium (ML-DSA) via Parity Encoding
+### Backdoor in CRYSTALS-Dilithium (ML-DSA) via Parity Encoding
 
 *(based on Algorithms 4–6 in “Backdooring Dilithium Signatures”)*
 
 Paper:
 **Backdooring Dilithium Signatures via Parity Leakage**
-https://link.springer.com/chapter/10.1007/978-3-031-83885-9_30
+[https://link.springer.com/chapter/10.1007/978-3-031-83885-9_30](https://link.springer.com/chapter/10.1007/978-3-031-83885-9_30)
+
+Reference Code (authors):N/A
 
 CyberSeQ Python Simulation:
 
-https://github.com/owlmt/PQC/blob/main/mldsa_backdoor_experiment1.ipynb
+[https://github.com/owlmt/PQC/blob/main/mldsa_backdoor_experiment1.ipynb](https://github.com/owlmt/PQC/blob/main/mldsa_backdoor_experiment1.ipynb)
 ---
 
 ## Overview
@@ -278,6 +280,7 @@ This repository is for:
 
 It is **not** intended for deployment or integration into real systems.
 Never use modified, experimental, or untrusted cryptographic implementations in production.
+
 
 
 
