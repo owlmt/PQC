@@ -66,7 +66,7 @@ LNCS 2025 (WISA Proceedings)
 Reference Code (authors):
 [https://github.com/Summwer/kyber-backdoor](https://github.com/Summwer/kyber-backdoor)
 
-CyberSeQ Python Simulation (Experiment 2 reproduction):
+CyberSeQ Python Simulation:
 [https://github.com/owlmt/PQC/blob/main/mlkem_backdoor_experiment2.ipynb](https://github.com/owlmt/PQC/blob/main/mlkem_backdoor_experiment2.ipynb)
 
 This experiment implements the backdoor proposed by Xia, Wang, and Gu in 2025, which introduces a **statistically undetectable kleptographic channel** directly inside **Kyber-KEM**.
@@ -123,6 +123,150 @@ This experiment demonstrates how a **fully standards-compliant** ML-KEM implemen
 Because the attack lives entirely inside **KeyGen**, and preserves the expected randomness profile, traditional conformance tests cannot detect it.
 
 ---
+# Experiment 3
+
+## Backdoor in CRYSTALS-Dilithium (ML-DSA) via Parity Encoding
+
+*(based on Algorithms 4–6 in “Backdooring Dilithium Signatures”)*
+
+Paper:
+**Backdooring Dilithium Signatures via Parity Leakage**
+https://link.springer.com/chapter/10.1007/978-3-031-83885-9_30
+
+CyberSeQ Python Simulation:
+
+https://github.com/owlmt/PQC/blob/main/mldsa_backdoor_experiment1.ipynb
+---
+
+## Overview
+
+This experiment reproduces the **kleptographic backdoor** described in the parity-based encoding mechanism of Algorithms 4–6 from the referenced Dilithium backdoor paper.
+
+Unlike Experiments 1 and 2 (which target ML-KEM), this attack compromises **ML-DSA / CRYSTALS-Dilithium**, the FIPS-204 standard for post-quantum signatures.
+
+The key idea:
+
+**A malicious implementation can encode an arbitrary secret payload inside the vector `z` of a Dilithium signature simply by controlling the parity of its coefficients.**
+
+The legitimate signature still passes verification, and the attack does not modify or violate the mathematical structure of Dilithium.
+
+---
+
+## How the Attack Works
+
+A Dilithium signature contains:
+
+```
+(z, h, c)
+```
+
+The backdoor replaces the honest computation of `z` with a controlled process that encodes attacker-chosen data.
+
+### 1. Mask the message
+
+```
+M_rho = M XOR rho
+```
+
+* `x ∈ {0,1}` controls parity inversion
+* `rho ∈ {0,1}^θ` is a random mask
+
+### 2. Encode parity
+
+For each coefficient `z[i]`:
+
+* If an **even** number is needed → sample from even residues modulo `q`.
+* If an **odd** number is needed → sample from odd residues modulo `q`.
+
+This enforces:
+
+```
+parity(z[i]) XOR x = M_rho[i]
+```
+
+### 3. Rejection sampling keeps the signature valid
+
+The attacker regenerates coefficients until Dilithium’s rejection conditions pass.
+Verification remains completely unchanged.
+
+### 4. Decode
+
+An attacker with `(x, rho)` recovers the hidden message:
+
+```
+M[i] = (parity(z[i]) XOR x) XOR rho[i]
+```
+
+Recovery is exact and deterministic.
+
+---
+
+## Hybrid Extension (Provided Here)
+
+The paper supports only:
+
+```
+θ ≤ 255*k − 1
+```
+
+This repository extends the attack to **any message length**:
+
+### Short messages
+
+Encoded fully via parity (Algorithm 6).
+
+### Long messages
+
+Split into two parts:
+
+* `M1` → encoded via parity
+* `M2` → indexes of `1` bits are recorded
+
+### Embedding strategy
+
+If unused room exists inside `z`, the index list of `M2` is hidden inside the unused coefficients.
+Otherwise, `M2` is returned separately (academic-mode reproduction of paper).
+
+This makes the experiment fully expressive and demonstrates real-world exfiltration capability.
+
+---
+
+## Why This Attack Matters
+
+This backdoor:
+
+* Does not modify Dilithium’s mathematics
+* Produces statistically valid signatures
+* Probably passes all FIPS-204 and NIST conformance tests
+* Evades distributional tests (even/odd residues remain uniform)
+* Works inside TPMs, HSMs, TEEs, enclaves, firmware
+* Does not require modification to public API or signature structure
+
+**A malicious library or hardware implementation could leak:**
+
+* private messages
+* authentication tokens
+* one-time signing keys
+* internal state
+* user secrets
+
+without ever failing verification.
+
+---
+
+## Summary
+
+Experiment 3 demonstrates that:
+
+* ML-DSA (Dilithium) can be backdoored silently
+* The parity of the `z` coefficients is enough to leak arbitrary data
+* Verification does not detect the manipulation
+* Statistical tests cannot detect the manipulation
+* Signatures remain fully standards-compliant
+
+This shows the profound risk of **implementation-level backdoors** in post-quantum signature schemes and motivates **formal verification** of cryptographic implementations, HSM firmware, and secure elements.
+
+---
 
 ## Warning / Disclaimer
 
@@ -134,6 +278,7 @@ This repository is for:
 
 It is **not** intended for deployment or integration into real systems.
 Never use modified, experimental, or untrusted cryptographic implementations in production.
+
 
 
 
